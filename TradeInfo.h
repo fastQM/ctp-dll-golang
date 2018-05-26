@@ -11,6 +11,13 @@ enum {
 	StatusError,
 };
 
+enum {
+	TradeNone = 0,
+	TradeError,
+	TradeCancled,
+	TradeDone,
+};
+
 struct DepthValue {
 	char name[16];
 	double bidPrice;
@@ -27,22 +34,25 @@ class CTradeInfo{
 		CTradeInfo(CBFunction cb);
 		~CTradeInfo();
 
-		// Depth info
+		// Depth info，支持多线程
 		void updateDepth(DepthValue values);
 		int getDepth(char *name, char *value);
 		
-		// instruments info
+		// instruments info，不支持多线程
 		void saveInstrumentInfo(CThostFtdcInstrumentField *info);
 		int getInstrumentInfo(char *name, char *info);
 
-		// account info
+		// account info，不支持多线程
 		void saveAccountInfo(CThostFtdcTradingAccountField *info);
 		int getAccountInfo(char *info);
 
-		// position info
+		// position info，不支持多线程
 		void savePositionInfo(CThostFtdcInvestorPositionField *info);
-		int getPositionInfo(char *info);
+		int getPositionInfo(char *name, char *info);
 		
+		// 获取交易结果，不支持多线程
+		void updateTradeResult(int status, CThostFtdcTradeField *info, char *errorMsg);
+		int getTradeResult(char *result);
 
 		bool setStatus(int status);
 		int getStatus();
@@ -62,6 +72,10 @@ class CTradeInfo{
 
 		int mStatus;
 		char mError[1028];
+
+		int mTradeResult;
+		CThostFtdcTradeField mTradeInfo;
+		char mTradeErrorMsg[1024];
 
 		SRWLOCK mSrwlockDepth;
 		SRWLOCK mSrwlockStatus;

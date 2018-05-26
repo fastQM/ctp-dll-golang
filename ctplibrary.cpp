@@ -201,12 +201,12 @@ bool Config(char *config) {
 
 		int length = instruments.Size();
 
-		for (int i = 0; i < instruments.Size(); i++) {
+		for (unsigned int i = 0; i < instruments.Size(); i++) {
 			Value & v = instruments[i];
 			assert(v.IsObject());
 			if (v.HasMember("name") && v["name"].IsString()) {
 				const char *name = v["name"].GetString();
-				int size = strlen(name)+1;
+				int size = (int)(strlen(name)+1);
 
 				GlobalInstruments[i] = new char[16];
 				memset(GlobalInstruments[i], 0, 16);
@@ -256,6 +256,27 @@ int GetInstrumentInfo(char *name, char *info) {
 	return 0;
 }
 
+int GetPositionInfo(char *name, char *info) {
+	int counter = 0;
+	if (gTradeInfo != NULL) {
+		pTraderSpi->ReqQryInvestorPosition(name);
+		while (gTradeInfo->getStatus() == StatusProcess) {
+
+			Sleep(100);
+			if (counter < 50) {
+				counter++;
+			}
+			else {
+				cout << "GetPositionInfo()³¬Ê±..." << endl;
+				return 0;
+			}
+		}
+		return gTradeInfo->getPositionInfo(name, info);
+	}
+	error("GetPositionInfo", "gTradeInfo is NULL");
+	return 0;
+}
+
 int GetBalance(char *info) {
 	int counter = 0;
 	if (gTradeInfo != NULL) {
@@ -274,9 +295,53 @@ int GetBalance(char *info) {
 		return gTradeInfo->getAccountInfo(info);
 
 	}
+	error("GetBalance", "gTradeInfo is NULL");
 	return 0;
 }
 
+
+int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result) {
+	int counter = 0;
+	if (gTradeInfo != NULL) {
+		pTraderSpi->ReqMarketOpenInsert(instrumentID, volume, isBuy);
+		while (gTradeInfo->getStatus() == StatusProcess) {
+
+			Sleep(100);
+			if (counter < 50) {
+				counter++;
+			}
+			else {
+				cout << "MarketOpenPosition()³¬Ê±..." << endl;
+				return 0;
+			}
+		}
+		return gTradeInfo->getTradeResult(result);
+	}
+
+	error("MarketOpenPosition", "gTradeInfo is NULL");
+	return 0;
+}
+int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result) {
+	int counter = 0;
+	if (gTradeInfo != NULL) {
+		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, isBuy);
+		while (gTradeInfo->getStatus() == StatusProcess) {
+
+			Sleep(100);
+			if (counter < 50) {
+				counter++;
+			}
+			else {
+				cout << "MarketClosePosition()³¬Ê±..." << endl;
+				return 0;
+			}
+		}
+		return gTradeInfo->getTradeResult(result);
+	}
+
+	error("MarketClosePosition", "gTradeInfo is NULL");
+	return 0;
+}
 
 
 int Test(char *echo) {
@@ -299,7 +364,7 @@ int Test(char *echo) {
 
 	memcpy(echo, result, strlen(result));
 
-	return strlen(result);
+	return (int)strlen(result);
 }
 
 void info(const char *prefix, const char *msg) {

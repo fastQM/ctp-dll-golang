@@ -498,6 +498,8 @@ void CTraderSpi::OnRspOrderInsert(CThostFtdcInputOrderField *pInputOrder, CThost
 {
 	cerr << "--->>> " << "OnRspOrderInsert" << endl;
 	IsErrorRspInfo(pRspInfo);
+	gTradeInfo->updateTradeResult(TradeError, NULL, pRspInfo->ErrorMsg);
+	gTradeInfo->setStatus(StatusDone);
 }
 
 void CTraderSpi::OnRspExecOrderInsert(CThostFtdcInputExecOrderField *pInputExecOrder, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
@@ -666,10 +668,17 @@ void CTraderSpi::OnRtnOrder(CThostFtdcOrderField *pOrder)
 	cerr << "--->>> " << "OnRtnOrder"  << endl;
 	if (IsMyOrder(pOrder))
 	{
-		if (IsTradingOrder(pOrder))
-			ReqOrderAction(pOrder);
-		else if (pOrder->OrderStatus == THOST_FTDC_OST_Canceled)
-			cout << "--->>> 撤单成功" << endl;
+		//if (IsTradingOrder(pOrder))
+		//	ReqOrderAction(pOrder);
+		//else if (pOrder->OrderStatus == THOST_FTDC_OST_Canceled)
+		//	cout << "--->>> 撤单成功" << endl;
+
+		// 只在OnRtnTrade回调调用时设置成交
+		if (pOrder->OrderStatus == THOST_FTDC_OST_Canceled) {
+			cout << "交易撤销:" << pOrder->OrderStatus << endl;
+			gTradeInfo->updateTradeResult(TradeCancled, NULL, NULL);
+			gTradeInfo->setStatus(StatusDone);
+		}
 	}
 }
 
@@ -710,6 +719,9 @@ void CTraderSpi::OnRtnQuote(CThostFtdcQuoteField *pQuote)
 void CTraderSpi::OnRtnTrade(CThostFtdcTradeField *pTrade)
 {
 	cerr << "--->>> " << "OnRtnTrade"  << endl;
+
+	gTradeInfo->updateTradeResult(TradeDone, pTrade, NULL);
+	gTradeInfo->setStatus(StatusDone);
 }
 
 void CTraderSpi:: OnFrontDisconnected(int nReason)
