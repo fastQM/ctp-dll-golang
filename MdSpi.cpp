@@ -31,6 +31,7 @@ void CMdSpi::OnFrontDisconnected(int nReason)
 {
 	cerr << "--->>> " << "OnFrontDisconnected" << endl;
 	cerr << "--->>> Reason = " << nReason << endl;
+	gTradeInfo->setStatus(StatusDisconnect);
 }
 		
 void CMdSpi::OnHeartBeatWarning(int nTimeLapse)

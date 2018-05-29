@@ -25,5 +25,7 @@ extern "C" CTP_API int GetPositionInfo(char *name, char *info);
 extern "C" CTP_API int GetBalance(char *info);
 extern "C" CTP_API int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result);
 extern "C" CTP_API int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result);
+extern "C" CTP_API int GetStatus();
+
 
 extern "C" CTP_API int Test(char *echo);

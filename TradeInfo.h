@@ -6,8 +6,10 @@
 
 enum {
 	StatusNone = 0,
+	StatusReady,
 	StatusProcess,
 	StatusDone,
+	StatusDisconnect,
 	StatusError,
 };
 

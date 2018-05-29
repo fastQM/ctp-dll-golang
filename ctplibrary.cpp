@@ -236,6 +236,7 @@ int GetDepth(char *name, char *value) {
 }
 
 int GetInstrumentInfo(char *name, char *info) {
+	cout << "获取商品信息:" << name << endl;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
 		pTraderSpi->ReqQryInstrument(name);
@@ -301,6 +302,7 @@ int GetBalance(char *info) {
 
 
 int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result) {
+	cout << "开仓请求:" << instrumentID << " 开仓数量:" << volume << " 买入:" << isBuy;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
 		pTraderSpi->ReqMarketOpenInsert(instrumentID, volume, isBuy);
@@ -322,6 +324,7 @@ int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result)
 	return 0;
 }
 int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result) {
+	cout << "平仓请求:" << instrumentID << " 开仓数量:" << volume << " 买入:" << isBuy;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
 		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, isBuy);
@@ -341,6 +344,15 @@ int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result
 
 	error("MarketClosePosition", "gTradeInfo is NULL");
 	return 0;
+}
+
+int GetStatus() {
+	if (gTradeInfo != NULL) {
+		return gTradeInfo->getStatus();
+	}
+
+	error("MarketClosePosition", "gTradeInfo is NULL");
+	return -1;
 }
 
 

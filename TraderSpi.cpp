@@ -226,6 +226,10 @@ void CTraderSpi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *pInve
 
 void CTraderSpi::ReqMarketOpenInsert(char *instrumentID, int volume, bool isBuy)
 {
+	if (!gTradeInfo->setStatus(StatusProcess)) {
+		return;
+	}
+
 	CThostFtdcInputOrderField req;
 	memset(&req, 0, sizeof(req));
 	///经纪公司代码
@@ -284,6 +288,12 @@ void CTraderSpi::ReqMarketOpenInsert(char *instrumentID, int volume, bool isBuy)
 
 void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, bool isBuy)
 {
+
+	if (!gTradeInfo->setStatus(StatusProcess)) {
+		return;
+	}
+
+
 	CThostFtdcInputOrderField req;
 	memset(&req, 0, sizeof(req));
 	///经纪公司代码
@@ -343,6 +353,10 @@ void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, bool isBuy
 
 void CTraderSpi::ReqOrderInsert(char *instrumentID, int volume, bool isBuy, double price)
 {
+	if (!gTradeInfo->setStatus(StatusProcess)) {
+		return;
+	}
+
 	CThostFtdcInputOrderField req;
 	memset(&req, 0, sizeof(req));
 	///经纪公司代码
@@ -728,6 +742,7 @@ void CTraderSpi:: OnFrontDisconnected(int nReason)
 {
 	cerr << "--->>> " << "OnFrontDisconnected" << endl;
 	cerr << "--->>> Reason = " << nReason << endl;
+	gTradeInfo->setStatus(StatusDisconnect);
 }
 		
 void CTraderSpi::OnHeartBeatWarning(int nTimeLapse)

@@ -29,7 +29,8 @@ CTradeInfo::~CTradeInfo(){
 void CTradeInfo::updateDepth(DepthValue value) {
 
 	AcquireSRWLockExclusive(&mSrwlockDepth);
-	cout << "[ID]" << value.name << "[ASK]" << value.askPrice << "[ASKVN]" << value.askVolumn << "[BID]" << value.bidPrice << "[BIDVN]" << value.bidVolumn << endl;
+	//cout << "[ID]" << value.name << "[ASK]" << value.askPrice << "[ASKVN]" << 
+	//	value.askVolumn << "[BID]" << value.bidPrice << "[BIDVN]" << value.bidVolumn << endl;
 
 	if (mValuesLength == 0) {
 		memcpy(&mValues[0], &value, sizeof(value));
@@ -58,7 +59,7 @@ void CTradeInfo::updateDepth(DepthValue value) {
 
 int CTradeInfo::getDepth(char *name, char *value) {
 	AcquireSRWLockShared(&mSrwlockDepth);
-	cout << "当前商品信息数: " << mValuesLength << endl;
+	//cout << "当前商品信息数: " << mValuesLength << endl;
 	for (int i = 0; i < mValuesLength; i++) {
 		if (strcmp(mValues[i].name, name) == 0) {
 
@@ -94,6 +95,10 @@ void CTradeInfo::saveInstrumentInfo(CThostFtdcInstrumentField *info) {
 	// 单线程写入，所以不用保护
 	//memcpy(&mInstruments[mInstrumentsLength], info, sizeof(CThostFtdcInstrumentField));
 	//mInstrumentsLength++;
+	if (info == NULL) {
+		//cout << "无法获取有效商品信息" << endl;
+		return;
+	}
 
 	if (mInstrumentsLength == 0) {
 		memcpy(&mInstruments[0], info, sizeof(CThostFtdcInstrumentField));
@@ -133,11 +138,11 @@ int CTradeInfo::getInstrumentInfo(char *name, char *info) {
 			d.AddMember(rapidjson::StringRef("LongMarginRatio"), mInstruments[i].LongMarginRatio, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("ShortMarginRatio"), mInstruments[i].ShortMarginRatio, d.GetAllocator());
 
-			cout << "商品编号:" << mInstruments[i].InstrumentID
-				<< "商品名称:" << mInstruments[i].InstrumentName
-				<< "交割年份:" << mInstruments[i].DeliveryYear << "交割月份:" << mInstruments[i].DeliveryMonth
-				<< "合约乘数:" << mInstruments[i].VolumeMultiple
-				<< "做多保证金率:" << mInstruments[i].LongMarginRatio << "做空保证金率:" << mInstruments[i].ShortMarginRatio;
+			////cout << "商品编号:" << mInstruments[i].InstrumentID
+			////	<< " 商品名称:" << mInstruments[i].InstrumentName
+			////	<< " 交割年份:" << mInstruments[i].DeliveryYear << " 交割月份:" << mInstruments[i].DeliveryMonth
+			////	<< " 合约乘数:" << mInstruments[i].VolumeMultiple
+			////	<< " 做多保证金率:" << mInstruments[i].LongMarginRatio << " 做空保证金率:" << mInstruments[i].ShortMarginRatio << endl;
 
 			StringBuffer buffer;
 			Writer<StringBuffer> writer(buffer);
@@ -154,8 +159,12 @@ int CTradeInfo::getInstrumentInfo(char *name, char *info) {
 }
 
 void CTradeInfo::savePositionInfo(CThostFtdcInvestorPositionField *info) {
+	if (info == NULL) {
+		//cout<< "无法获取持仓信息" <<endl;
+		return;
+	}
 	if (mPositionLength == 0) {
-		memcpy(&mPosition[0], 0, sizeof(CThostFtdcInvestorPositionField));
+		memcpy(&mPosition[0], info, sizeof(CThostFtdcInvestorPositionField));
 		mPositionLength++;
 	}
 	else {
@@ -252,8 +261,8 @@ int CTradeInfo::getAccountInfo(char *info) {
 
 
 bool CTradeInfo::setStatus(int status) {
-	if (mStatus == StatusError) {
-		cout << "请先处理错误状态:"<< mError<<endl;
+	if (mStatus == StatusError || mStatus == StatusDisconnect) {
+		cout << "连接断开或者发生错误:"<< mError << endl;
 		return false;
 	}
 
