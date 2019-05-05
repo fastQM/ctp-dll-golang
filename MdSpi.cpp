@@ -115,6 +115,10 @@ void CMdSpi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketDa
 	value.askVolumn = pDepthMarketData->AskVolume1;
 	value.bidPrice = pDepthMarketData->BidPrice1;
 	value.bidVolumn = pDepthMarketData->BidVolume1;
+	value.lastPrice = pDepthMarketData->LastPrice;
+	value.closePrice = pDepthMarketData->ClosePrice;
+	memcpy(value.tradingDate, pDepthMarketData->TradingDay, strlen(pDepthMarketData->TradingDay));
+	memcpy(value.updateTime, pDepthMarketData->UpdateTime, strlen(pDepthMarketData->UpdateTime));
 	gTradeInfo->updateDepth(value);
 }
 

@@ -301,19 +301,32 @@ int GetBalance(char *info) {
 }
 
 
-int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result) {
-	cout << "开仓请求:" << instrumentID << " 开仓数量:" << volume << " 买入:" << isBuy;
+int MarketOpenPosition(char *instrumentID, int volume, int limitPrice, int isBuy, int isMarket, char *result) {
+	cout << "开仓请求:" << instrumentID << " 开仓数量:" << volume << " 开仓价格:" << limitPrice << " 买入:"
+		<< isBuy << "市价:" << isMarket << endl;;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
-		pTraderSpi->ReqMarketOpenInsert(instrumentID, volume, isBuy);
-		while (gTradeInfo->getStatus() == StatusProcess) {
+		bool buyFlag = false;
+		bool marketFlag = false;
 
+		if (isBuy > 0) {
+			buyFlag = true;
+		}
+
+		if (isMarket > 0) {
+			marketFlag = true;
+		}
+
+		pTraderSpi->ReqMarketOpenInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag);
+		int status = gTradeInfo->getStatus();
+		while (status == StatusProcess||status==StatusAllTraded) {
+			status = gTradeInfo->getStatus();
 			Sleep(100);
 			if (counter < 50) {
 				counter++;
 			}
 			else {
-				cout << "MarketOpenPosition()超时..." << endl;
+				cout << "MarketOpenPosition()超时...状态:" <<status<< endl;
 				return 0;
 			}
 		}
@@ -323,13 +336,23 @@ int MarketOpenPosition(char *instrumentID, int volume, bool isBuy, char *result)
 	error("MarketOpenPosition", "gTradeInfo is NULL");
 	return 0;
 }
-int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result) {
-	cout << "平仓请求:" << instrumentID << " 开仓数量:" << volume << " 买入:" << isBuy;
+int MarketClosePosition(char *instrumentID, int volume, int limitPrice, int isBuy, int isMarket, char *result) {
+	cout << "平仓请求:" << instrumentID << " 开仓数量:" << volume << " 开仓价格:"<< limitPrice << " 买入:" 
+		<< isBuy << " 市价:" << isMarket << endl;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
-		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, isBuy);
-		while (gTradeInfo->getStatus() == StatusProcess) {
-
+		bool buyFlag = false;
+		bool marketFlag = false;
+		if (isBuy > 0) {
+			buyFlag = true;
+		}
+		if (isMarket > 0) {
+			marketFlag = true;
+		}
+		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag);
+		int status = gTradeInfo->getStatus();
+		while (status == StatusProcess || status == StatusAllTraded) {
+			status = gTradeInfo->getStatus();
 			Sleep(100);
 			if (counter < 50) {
 				counter++;
@@ -343,6 +366,35 @@ int MarketClosePosition(char *instrumentID, int volume, bool isBuy, char *result
 	}
 
 	error("MarketClosePosition", "gTradeInfo is NULL");
+	return 0;
+}
+
+int MarketStopPrice(char *instrumentID, int volume, int isBuy, double stopPrice, double limitPrice, char *result) {
+	cout << "止损请求:" << instrumentID << " 开仓数量:" << volume << " 买入:" << isBuy  
+		<< " 止损价格:" << stopPrice << " 下单价格:" << limitPrice << endl;
+	int counter = 0;
+	if (gTradeInfo != NULL) {
+		bool buyFlag = false;
+		if (isBuy > 0) {
+			buyFlag = true;
+		}
+		pTraderSpi->ReqMarketStopPriceInsert(instrumentID, volume, buyFlag, stopPrice, limitPrice);
+		int status = gTradeInfo->getStatus();
+		while (status == StatusProcess || status == StatusAllTraded) {
+			status = gTradeInfo->getStatus();
+			Sleep(100);
+			if (counter < 50) {
+				counter++;
+			}
+			else {
+				cout << "MarketStopPrice()超时..." << endl;
+				return 0;
+			}
+		}
+		return gTradeInfo->getTradeResult(result);
+	}
+
+	error("MarketStopPrice", "gTradeInfo is NULL");
 	return 0;
 }
 

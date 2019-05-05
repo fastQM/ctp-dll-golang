@@ -8,6 +8,7 @@ enum {
 	StatusNone = 0,
 	StatusReady,
 	StatusProcess,
+	StatusAllTraded,
 	StatusDone,
 	StatusDisconnect,
 	StatusError,
@@ -26,6 +27,16 @@ struct DepthValue {
 	double bidVolumn;
 	double askPrice;
 	double askVolumn;
+
+	double lastPrice;
+	double closePrice;
+	char tradingDate[9];
+	char updateTime[9];
+};
+
+struct TradedInfo {
+	double price;
+	int amount;
 };
 
 
@@ -54,6 +65,7 @@ class CTradeInfo{
 		
 		// 获取交易结果，不支持多线程
 		void updateTradeResult(int status, CThostFtdcTradeField *info, char *errorMsg);
+		void updateTradeInfo(double price, int amount);
 		int getTradeResult(char *result);
 
 		bool setStatus(int status);
@@ -77,6 +89,8 @@ class CTradeInfo{
 
 		int mTradeResult;
 		CThostFtdcTradeField mTradeInfo;
+		TradedInfo mTraded[1024];
+		int mTradedIndex;
 		char mTradeErrorMsg[1024];
 
 		SRWLOCK mSrwlockDepth;

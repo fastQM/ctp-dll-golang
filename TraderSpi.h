@@ -81,9 +81,11 @@ public:
 	///报单录入请求
 	void ReqOrderInsert(char *instrumentID, int volume, bool isBuy, double price);
 	// 市价开仓请求
-	void ReqMarketOpenInsert(char *instrumentID, int volume, bool isBuy);
+	void ReqMarketOpenInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket);
 	// 市价平仓请求
-	void ReqMarketCloseInsert(char *instrumentID, int volume, bool isBuy);
+	void ReqMarketCloseInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket);
+	// 止损设置
+	void ReqMarketStopPriceInsert(char *instrumentID, int volume, bool isBuy, double stopPrice, double limitPrice);
 	///执行宣告录入请求
 	void ReqExecOrderInsert();
 	///询价录入请求

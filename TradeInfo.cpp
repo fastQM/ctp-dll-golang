@@ -17,6 +17,9 @@ CTradeInfo::CTradeInfo(CBFunction cb) {
 	memset(mValues, 0, sizeof(DepthValue) * MAX_SIZE);
 	memset(mInstruments, 0, sizeof(CThostFtdcInstrumentField) * MAX_SIZE);
 	memset(mPosition, 0, sizeof(CThostFtdcInvestorPositionField) * MAX_SIZE);
+
+	mTradedIndex = 0;
+	memset(mTraded, 0, sizeof(TradedInfo)*MAX_SIZE);
 	InitializeSRWLock(&mSrwlockDepth);
 	InitializeSRWLock(&mSrwlockStatus);
 }
@@ -40,10 +43,11 @@ void CTradeInfo::updateDepth(DepthValue value) {
 		int i;
 		for (i = 0; i < mValuesLength; i++) {
 			if (strcmp(mValues[i].name, value.name) == 0) {
-				mValues[i].askPrice = value.askPrice;
-				mValues[i].askVolumn = value.askVolumn;
-				mValues[i].bidPrice = value.bidPrice;
-				mValues[i].bidVolumn = value.bidVolumn;
+				//mValues[i].askPrice = value.askPrice;
+				//mValues[i].askVolumn = value.askVolumn;
+				//mValues[i].bidPrice = value.bidPrice;
+				//mValues[i].bidVolumn = value.bidVolumn;
+				memcpy(&mValues[i], &value, sizeof(value));
 				break;
 			}
 		}
@@ -66,10 +70,14 @@ int CTradeInfo::getDepth(char *name, char *value) {
 			Document d;
 			d.SetObject();
 			d.AddMember(rapidjson::StringRef("name"), rapidjson::StringRef(name), d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("tradingDate"), rapidjson::StringRef(mValues[i].tradingDate), d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("updateTime"), rapidjson::StringRef(mValues[i].updateTime), d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("bid"), mValues[i].bidPrice, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("bidvolumn"), mValues[i].bidVolumn, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("ask"), mValues[i].askPrice, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("askvolumn"), mValues[i].askVolumn, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("lastPrice"), mValues[i].lastPrice, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("closePrice"), mValues[i].closePrice, d.GetAllocator());
 			
 			StringBuffer buffer;
 			Writer<StringBuffer> writer(buffer);
@@ -131,7 +139,8 @@ int CTradeInfo::getInstrumentInfo(char *name, char *info) {
 			Document d;
 			d.SetObject();
 			d.AddMember(rapidjson::StringRef("InstrumentID"), rapidjson::StringRef(mInstruments[i].InstrumentID), d.GetAllocator());
-			d.AddMember(rapidjson::StringRef("InstrumentName"), rapidjson::StringRef(mInstruments[i].InstrumentName), d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("ExchangeID"), rapidjson::StringRef(mInstruments[i].ExchangeID), d.GetAllocator());
+			//d.AddMember(rapidjson::StringRef("InstrumentName"), rapidjson::StringRef(mInstruments[i].InstrumentName), d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("DeliveryYear"), mInstruments[i].DeliveryYear, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("DeliveryMonth"), mInstruments[i].DeliveryMonth, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("VolumeMultiple"), mInstruments[i].VolumeMultiple, d.GetAllocator());
@@ -208,9 +217,13 @@ int CTradeInfo::getPositionInfo(char *name, char *info) {
 			d.AddMember(rapidjson::StringRef("PositionCost"), mPosition[i].PositionCost, d.GetAllocator());
 
 			d.AddMember(rapidjson::StringRef("Commission"), mPosition[i].Commission, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("CloseProfit"), mPosition[i].CloseProfit, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("PositionProfit"), mPosition[i].PositionProfit, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("OpenCost"), mPosition[i].OpenCost, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("ExchangeMargin"), mPosition[i].ExchangeMargin, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("TodayPosition"), mPosition[i].TodayPosition, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("MarginRateByMoney"), mPosition[i].MarginRateByMoney, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("MarginRateByVolume"), mPosition[i].MarginRateByVolume, d.GetAllocator());
 
 			//cout << "商品编号:" << mInstruments[i].InstrumentID
 			//	<< "商品名称:" << mInstruments[i].InstrumentName
@@ -245,8 +258,14 @@ int CTradeInfo::getAccountInfo(char *info) {
 	Document d;
 	d.SetObject();
 	d.AddMember(rapidjson::StringRef("id"), rapidjson::StringRef(mAccountInfo.AccountID), d.GetAllocator());
-	d.AddMember(rapidjson::StringRef("balance"), mAccountInfo.Balance, d.GetAllocator());
-	d.AddMember(rapidjson::StringRef("available"), mAccountInfo.Available, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("CurrMargin"), mAccountInfo.CurrMargin, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("CashIn"), mAccountInfo.CashIn, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("Commission"), mAccountInfo.Commission, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("CloseProfit"), mAccountInfo.CloseProfit, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("PositionProfit"), mAccountInfo.PositionProfit, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("Balance"), mAccountInfo.Balance, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("Available"), mAccountInfo.Available, d.GetAllocator());
+	d.AddMember(rapidjson::StringRef("WithdrawQuota"), mAccountInfo.WithdrawQuota, d.GetAllocator());
 
 	StringBuffer buffer;
 	Writer<StringBuffer> writer(buffer);
@@ -272,6 +291,7 @@ bool CTradeInfo::setStatus(int status) {
 	}
 
 	AcquireSRWLockExclusive(&mSrwlockStatus);
+	cout << "设置状态:" << status << endl;
 	mStatus = status;
 	ReleaseSRWLockExclusive(&mSrwlockStatus);
 
@@ -295,8 +315,14 @@ void CTradeInfo::updateTradeResult(int status, CThostFtdcTradeField *info, char 
 	else if (status == TradeError) {
 		memcpy(mTradeErrorMsg, errorMsg, strlen(errorMsg));
 	}
-
 }
+
+void CTradeInfo::updateTradeInfo(double price, int amount) {
+	mTraded[mTradedIndex].price = price;
+	mTraded[mTradedIndex].amount = amount;
+	mTradedIndex++;
+}
+
 int CTradeInfo::getTradeResult(char *result) {
 
 	Document d;
@@ -321,7 +347,7 @@ int CTradeInfo::getTradeResult(char *result) {
 		}
 		case TradeCancled:
 		{
-			d.AddMember(rapidjson::StringRef("status"), rapidjson::StringRef("cancle"), d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("status"), rapidjson::StringRef("cancel"), d.GetAllocator());
 
 			d.Accept(writer);
 
@@ -332,12 +358,21 @@ int CTradeInfo::getTradeResult(char *result) {
 		}
 		case TradeDone:
 		{
+			int totalAmount = 0;
+			double totalCost = 0;
+			for (int i = 0; i < mTradedIndex; i++) {
+				totalCost += mTraded[i].price*mTraded[i].amount;
+				totalAmount += mTraded[i].amount;
+			}
+			mTradedIndex = 0;
+			memset(mTraded, 0, sizeof(TradedInfo)*MAX_SIZE);
+
 			d.AddMember(rapidjson::StringRef("status"), rapidjson::StringRef("success"), d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("TradeID"), rapidjson::StringRef(mTradeInfo.TradeID), d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("TradeDate"), rapidjson::StringRef(mTradeInfo.TradeDate), d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("TradeTime"), rapidjson::StringRef(mTradeInfo.TradeTime), d.GetAllocator());
-			d.AddMember(rapidjson::StringRef("Price"), mTradeInfo.Price, d.GetAllocator());
-			d.AddMember(rapidjson::StringRef("Volume"), mTradeInfo.Volume, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("Price"), totalCost/totalAmount, d.GetAllocator());
+			d.AddMember(rapidjson::StringRef("Volume"), totalAmount, d.GetAllocator());
 			d.AddMember(rapidjson::StringRef("TradeType"), mTradeInfo.TradeType, d.GetAllocator());
 
 			d.Accept(writer);
@@ -347,9 +382,9 @@ int CTradeInfo::getTradeResult(char *result) {
 			memcpy(result, json, strlen(json));
 			return (int)strlen(json);
 		}
-	default:
-		cout << "无效的交易状态" << endl;
-	}
+		default:
+			cout << "无效的交易状态" << endl;
+		}
 	return 0;
 }
 
