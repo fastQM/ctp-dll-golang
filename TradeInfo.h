@@ -19,6 +19,7 @@ enum {
 	TradeError,
 	TradeCancled,
 	TradeDone,
+	TradeQueued,
 };
 
 struct DepthValue {
@@ -66,7 +67,11 @@ class CTradeInfo{
 		// 获取交易结果，不支持多线程
 		void updateTradeResult(int status, CThostFtdcTradeField *info, char *errorMsg);
 		void updateTradeInfo(double price, int amount);
+		void updateQueueInfo(int status, char *ExchangeID, char *OrderSysID);
 		int getTradeResult(char *result);
+
+		void setOrderSysID(TThostFtdcOrderSysIDType orderSysID);
+		bool isCurrentOrderSysID(TThostFtdcOrderSysIDType orderSysID);
 
 		bool setStatus(int status);
 		int getStatus();
@@ -92,6 +97,9 @@ class CTradeInfo{
 		TradedInfo mTraded[1024];
 		int mTradedIndex;
 		char mTradeErrorMsg[1024];
+
+		char mOrderRef[2][256];
+		char mOrderSysID[21];
 
 		SRWLOCK mSrwlockDepth;
 		SRWLOCK mSrwlockStatus;

@@ -1,5 +1,6 @@
 #pragma once
 #include ".\ThostTraderApi\ThostFtdcTraderApi.h"
+#include ".\ThostTraderApi\ThostFtdcUserApiDataType.h"
 
 class CTraderSpi : public CThostFtdcTraderSpi
 {
@@ -67,9 +68,14 @@ public:
 	///成交通知
 	virtual void OnRtnTrade(CThostFtdcTradeField *pTrade);
 
+	///客户端认证响应
+	virtual void OnRspAuthenticate(CThostFtdcRspAuthenticateField *pRspAuthenticateField, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
+
 public:
 	///用户登录请求
 	void ReqUserLogin();
+	///客户端认证请求
+	int ReqAuthenticate();
 	///投资者结算结果确认
 	void ReqSettlementInfoConfirm();
 	///请求查询合约
@@ -83,9 +89,11 @@ public:
 	// 市价开仓请求
 	void ReqMarketOpenInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket);
 	// 市价平仓请求
-	void ReqMarketCloseInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket);
+	void ReqMarketCloseInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket, bool isToday);
 	// 止损设置
 	void ReqMarketStopPriceInsert(char *instrumentID, int volume, bool isBuy, double stopPrice, double limitPrice);
+	// 撤单
+	void ReqCancelOrder(char *instrumentID, char *exchangeID, char *orderSysID);
 	///执行宣告录入请求
 	void ReqExecOrderInsert();
 	///询价录入请求

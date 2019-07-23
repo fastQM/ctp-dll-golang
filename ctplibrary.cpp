@@ -32,6 +32,8 @@ CTraderSpi* pTraderSpi;
 // 配置参数
 char GlobalMarketAddr[128] = "tcp://180.168.212.228:41213";
 char GlobalTradeAddr[128] = "tcp://180.168.212.228:41205";
+char GlobalAppID[128];
+char GlobalAuthenCode[128];
 TThostFtdcBrokerIDType	BROKER_ID = "8080";				// 经纪公司代码
 TThostFtdcInvestorIDType INVESTOR_ID = "";			// 投资者代码
 TThostFtdcPasswordType  PASSWORD = "";			// 用户密码
@@ -193,6 +195,24 @@ bool Config(char *config) {
 		return false;
 	}
 
+	Value& valueAppID = doc["appid"];
+	if (valueInvestor != NULL) {
+		const char *appID = valueAppID.GetString();
+		memset(GlobalAppID, 0, 128);
+		memcpy(GlobalAppID, appID, strlen(appID));
+	}
+
+	cout << "GlobalAppID:" << GlobalAppID[0] << "******" << GlobalAppID[strlen(GlobalAppID) - 1] << endl;
+
+	Value& valueAuthenCode = doc["authencode"];
+	if (valueInvestor != NULL) {
+		const char *authenCode = valueAuthenCode.GetString();
+		memset(GlobalAuthenCode, 0, 128);
+		memcpy(GlobalAuthenCode, authenCode, strlen(authenCode));
+	}
+
+	cout << "GlobalAuthenCode:" << GlobalAuthenCode[0] << "******" << GlobalAuthenCode[strlen(GlobalAuthenCode) - 1] << endl;
+
 	Value& instruments = doc["instruments"];
 	if (instruments != NULL && instruments.IsArray()) {
 
@@ -336,20 +356,50 @@ int MarketOpenPosition(char *instrumentID, int volume, int limitPrice, int isBuy
 	error("MarketOpenPosition", "gTradeInfo is NULL");
 	return 0;
 }
-int MarketClosePosition(char *instrumentID, int volume, int limitPrice, int isBuy, int isMarket, char *result) {
-	cout << "平仓请求:" << instrumentID << " 开仓数量:" << volume << " 开仓价格:"<< limitPrice << " 买入:" 
-		<< isBuy << " 市价:" << isMarket << endl;
+
+int CancelOrder(char *instrumentID, char *exchangeID, char *orderSysID, char *result) {
+	cout << "撤单请求:" << instrumentID << " 交易所编码:" << exchangeID << " 订单编码:" << orderSysID << endl;;
+	int counter = 0;
+	if (gTradeInfo != NULL) {
+		pTraderSpi->ReqCancelOrder(instrumentID, exchangeID, orderSysID);
+		int status = gTradeInfo->getStatus();
+		while (status == StatusProcess || status == StatusAllTraded) {
+			status = gTradeInfo->getStatus();
+			Sleep(100);
+			if (counter < 100) {
+				counter++;
+			}
+			else {
+				cout << "CancelOrder()超时...状态:" << status << endl;
+				return 0;
+			}
+		}
+		return gTradeInfo->getTradeResult(result);
+	}
+
+	error("CancelOrder", "gTradeInfo is NULL");
+	return 0;
+}
+
+
+int MarketClosePosition(char *instrumentID, int volume, int limitPrice, int isBuy, int isMarket, int isToday, char *result) {
+	cout << "平仓请求:" << instrumentID << " 平仓数量:" << volume << " 平仓价格:"<< limitPrice << " 买入:" 
+		<< isBuy << " 市价:" << isMarket << "平今:" << isToday << endl;
 	int counter = 0;
 	if (gTradeInfo != NULL) {
 		bool buyFlag = false;
 		bool marketFlag = false;
+		bool todayFlag = false;
 		if (isBuy > 0) {
 			buyFlag = true;
 		}
 		if (isMarket > 0) {
 			marketFlag = true;
 		}
-		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag);
+		if (isToday > 0) {
+			todayFlag = true;
+		}
+		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag, todayFlag);
 		int status = gTradeInfo->getStatus();
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();

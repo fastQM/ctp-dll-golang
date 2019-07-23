@@ -45,6 +45,9 @@
     <ClInclude Include="TradeInfo.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TraderSpi.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -70,7 +73,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="ThostTraderApi\thostmduserapi.lib" />
-    <Library Include="ThostTraderApi\thosttraderapi.lib" />
+    <Library Include="ThostTraderApi\thostmduserapi_se.lib">
+      <Filter>资源文件</Filter>
+    </Library>
+    <Library Include="ThostTraderApi\thosttraderapi_se.lib">
+      <Filter>资源文件</Filter>
+    </Library>
   </ItemGroup>
 </Project>

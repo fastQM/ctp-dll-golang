@@ -18,6 +18,8 @@ extern char PASSWORD[];			// 用户密码
 //extern char INSTRUMENT_ID[];	// 合约代码
 extern char *GlobalInstruments[];
 extern int GlobalInstrumentsNum;
+extern char GlobalAppID[];
+extern char GlobalAuthenCode[];
 
 // 请求编号
 extern int iRequestID;
@@ -40,9 +42,45 @@ bool IsFlowControl(int iResult)
 void CTraderSpi::OnFrontConnected()
 {
 	cerr << "--->>> " << "OnFrontConnected" << endl;
+	static const char *version = pTraderApi->GetApiVersion();
+	cout << "------当前版本号 ：" << version << " ------" << endl;
+	ReqAuthenticate();
+}
+
+int CTraderSpi::ReqAuthenticate()
+{
+	CThostFtdcReqAuthenticateField field;
+	memset(&field, 0, sizeof(field));
+	strcpy(field.BrokerID, BROKER_ID);
+	strcpy(field.UserID, INVESTOR_ID);
+	strcpy(field.AppID, GlobalAppID);
+	strcpy(field.AuthCode, GlobalAuthenCode);
+	return pTraderApi->ReqAuthenticate(&field, ++iRequestID);
+}
+
+void CTraderSpi::OnRspAuthenticate(CThostFtdcRspAuthenticateField *pRspAuthenticateField, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+	printf("<OnRspAuthenticate>\n");
+	if (pRspAuthenticateField)
+	{
+		printf("\tBrokerID [%s]\n", pRspAuthenticateField->BrokerID);
+		printf("\tUserID [%s]\n", pRspAuthenticateField->UserID);
+		printf("\tUserProductInfo [%s]\n", pRspAuthenticateField->UserProductInfo);
+		printf("\tAppID [%s]\n", pRspAuthenticateField->AppID);
+		printf("\tAppType [%c]\n", pRspAuthenticateField->AppType);
+	}
+	if (pRspInfo)
+	{
+		printf("\tErrorMsg [%s]\n", pRspInfo->ErrorMsg);
+		printf("\tErrorID [%d]\n", pRspInfo->ErrorID);
+	}
+	printf("\tnRequestID [%d]\n", nRequestID);
+	printf("\tbIsLast [%d]\n", bIsLast);
+	printf("</OnRspAuthenticate>\n");
+
 	///用户登录请求
 	ReqUserLogin();
-}
+};
 
 void CTraderSpi::ReqUserLogin()
 {
@@ -76,6 +114,7 @@ void CTraderSpi::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin,
 		sprintf(QUOTE_REF, "%d", 1);
 		///获取当前交易日
 		cerr << "--->>> 获取当前交易日 = " << pTraderApi->GetTradingDay() << endl;
+		cerr << "--->>> 当前SessioID = " << hex << pRspUserLogin->SessionID << endl;
 		///投资者结算结果确认
 		ReqSettlementInfoConfirm();
 	}
@@ -269,18 +308,24 @@ void CTraderSpi::ReqMarketOpenInsert(char *instrumentID, int volume, int limitPr
 		req.OrderPriceType = THOST_FTDC_OPT_AnyPrice;
 		///价格
 		req.LimitPrice = 0;
+		/////有效期类型: 立即成交
+		//req.TimeCondition = THOST_FTDC_TC_IOC;
 	}
 	else {
 		///报单价格条件: 限价
 		req.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
 		///价格
 		req.LimitPrice = limitPrice;
+		/////有效期类型: 当日有效
+		//req.TimeCondition = THOST_FTDC_TC_GFD;
 	}
+
+	///有效期类型: 立即成交,我不需要撤单操作[mqiu20190612]
+	req.TimeCondition = THOST_FTDC_TC_IOC;
 
 	///数量: 1
 	req.VolumeTotalOriginal = volume;
-	///有效期类型: 当日有效
-	req.TimeCondition = THOST_FTDC_TC_IOC;
+
 	///GTD日期
 	//	TThostFtdcDateType	GTDDate;
 	///成交量类型: 任何数量
@@ -306,7 +351,7 @@ void CTraderSpi::ReqMarketOpenInsert(char *instrumentID, int volume, int limitPr
 	cerr << "--->>> 市价开仓录入请求: " << iResult << ((iResult == 0) ? ", 成功" : ", 失败") << endl;
 }
 
-void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket)
+void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, int limitPrice, bool isBuy, bool isMarket, bool isToday)
 {
 
 	if (!gTradeInfo->setStatus(StatusProcess)) {
@@ -333,8 +378,16 @@ void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, int limitP
 	else {
 		req.Direction = THOST_FTDC_D_Sell;
 	}
-	///组合开平标志: 平仓
-	req.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
+
+	if (isToday){
+		///组合开平标志: 平仓
+		req.CombOffsetFlag[0] = THOST_FTDC_OF_CloseToday;
+	}
+	else {
+		///组合开平标志: 平仓
+		req.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
+	}
+
 	///组合投机套保标志
 	req.CombHedgeFlag[0] = THOST_FTDC_HF_Speculation;
 
@@ -353,7 +406,7 @@ void CTraderSpi::ReqMarketCloseInsert(char *instrumentID, int volume, int limitP
 
 	///数量: 1
 	req.VolumeTotalOriginal = volume;
-	///有效期类型: 当日有效
+	///有效期类型: 立即成交
 	req.TimeCondition = THOST_FTDC_TC_IOC;
 	///GTD日期
 	//	TThostFtdcDateType	GTDDate;
@@ -633,6 +686,50 @@ void CTraderSpi::OnRspQuoteInsert(CThostFtdcInputQuoteField *pInputQuote, CThost
 	IsErrorRspInfo(pRspInfo);
 }
 
+
+void CTraderSpi::ReqCancelOrder(char *instrumentID, char *exchangeID, char *orderSysID)
+{
+	if (!gTradeInfo->setStatus(StatusProcess)) {
+		cerr << "Invalid status" << endl;
+		return;
+	}
+
+	CThostFtdcInputOrderActionField req;
+	memset(&req, 0, sizeof(req));
+	///经纪公司代码
+	strcpy(req.BrokerID, BROKER_ID);
+	///投资者代码
+	strcpy(req.InvestorID, INVESTOR_ID);
+	///报单操作引用
+	//	TThostFtdcOrderActionRefType	OrderActionRef;
+	///报单引用
+	strcpy(req.ExchangeID, exchangeID);
+	strcpy(req.OrderSysID, orderSysID);
+	///请求编号
+	//	TThostFtdcRequestIDType	RequestID;
+	///前置编号
+	req.FrontID = FRONT_ID;
+	///会话编号
+	req.SessionID = SESSION_ID;
+	///交易所代码
+	//	TThostFtdcExchangeIDType	ExchangeID;
+	///报单编号
+	//	TThostFtdcOrderSysIDType	OrderSysID;
+	///操作标志
+	req.ActionFlag = THOST_FTDC_AF_Delete;
+	///价格
+	//	TThostFtdcPriceType	LimitPrice;
+	///数量变化
+	//	TThostFtdcVolumeType	VolumeChange;
+	///用户代码
+	//	TThostFtdcUserIDType	UserID;
+	///合约代码
+	strcpy(req.InstrumentID, instrumentID);
+
+	int iResult = pTraderApi->ReqOrderAction(&req, ++iRequestID);
+	cerr << "--->>> 撤单操作请求: " << iResult << ((iResult == 0) ? ", 成功" : ", 失败") << endl;
+}
+
 void CTraderSpi::ReqOrderAction(CThostFtdcOrderField *pOrder)
 {
 	static bool ORDER_ACTION_SENT = false;		//是否发送了报单
@@ -782,7 +879,7 @@ void CTraderSpi::OnRtnOrder(CThostFtdcOrderField *pOrder)
 		//	ReqOrderAction(pOrder);
 		//else if (pOrder->OrderStatus == THOST_FTDC_OST_Canceled)
 		//	cout << "--->>> 撤单成功" << endl;
-
+		cout << "交易状态:" << pOrder->OrderStatus <<"交易编号:"<< pOrder->OrderSysID << endl;
 		// 只在OnRtnTrade回调调用时设置成交
 		if (pOrder->OrderStatus == THOST_FTDC_OST_Canceled) {
 			cout << "交易撤销:" << pOrder->OrderStatus << endl;
@@ -790,11 +887,24 @@ void CTraderSpi::OnRtnOrder(CThostFtdcOrderField *pOrder)
 			gTradeInfo->setStatus(StatusDone);
 		}
 		else {
-			cout << "交易状态:" << pOrder->OrderStatus << endl;
-			if (pOrder->OrderStatus == THOST_FTDC_OST_AllTraded) {
-				gTradeInfo->setStatus(StatusAllTraded);
+			cout << "交易类型:" << pOrder->TimeCondition << endl;
+			// 目前未使用THOST_FTDC_TC_GFD，强制所有订单立即执行
+			if (pOrder->TimeCondition == THOST_FTDC_TC_GFD) {	// 限价单条件目前是都在队列中，其他状态不清楚TODO
+				if (pOrder->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
+					gTradeInfo->updateQueueInfo(TradeQueued,pOrder->ExchangeID, pOrder->OrderSysID);
+					gTradeInfo->setStatus(StatusDone);
+				}
+			}
+			else if (pOrder->TimeCondition == THOST_FTDC_TC_IOC) {	// 市价单需要全部成交
+				if (pOrder->OrderStatus == THOST_FTDC_OST_AllTraded) {
+					gTradeInfo->setStatus(StatusAllTraded);
+					gTradeInfo->setOrderSysID(pOrder->OrderSysID);
+				}
 			}
 		}
+	}
+	else {
+		cerr << "不是同一个会话, 交易编号:"<< pOrder->OrderSysID << endl;
 	}
 }
 
@@ -835,16 +945,22 @@ void CTraderSpi::OnRtnQuote(CThostFtdcQuoteField *pQuote)
 void CTraderSpi::OnRtnTrade(CThostFtdcTradeField *pTrade)
 {
 	cerr << "--->>> " << "OnRtnTrade"  << endl;
-	if (gTradeInfo->getStatus() == StatusAllTraded) {
-		cout << "完全成交价格:"<<pTrade->Price<<"成交数量:"<<pTrade->Volume<< endl;
-		gTradeInfo->updateTradeInfo(pTrade->Price, pTrade->Volume);
-		gTradeInfo->updateTradeResult(TradeDone, pTrade, NULL);
-		gTradeInfo->setStatus(StatusDone);
+	if (gTradeInfo->isCurrentOrderSysID(pTrade->OrderSysID)) {
+		if (gTradeInfo->getStatus() == StatusAllTraded) {
+			cout << "完全成交价格:" << pTrade->Price << "成交数量:" << pTrade->Volume << endl;
+			gTradeInfo->updateTradeInfo(pTrade->Price, pTrade->Volume);
+			gTradeInfo->updateTradeResult(TradeDone, pTrade, NULL);
+			gTradeInfo->setStatus(StatusDone);
+		}
+		else {
+			cout << "部分成交价格:" << pTrade->Price << "成交数量:" << pTrade->Volume << endl;
+			gTradeInfo->updateTradeInfo(pTrade->Price, pTrade->Volume);
+		}
 	}
 	else {
-		cout << "部分成交价格:" << pTrade->Price << "成交数量:" << pTrade->Volume << endl;
-		gTradeInfo->updateTradeInfo(pTrade->Price, pTrade->Volume);
+		cout<<"非本会话交易编码:"<< pTrade->OrderSysID << "成交价格:" << pTrade->Price << "成交数量:" << pTrade->Volume << endl;
 	}
+
 
 }
 
@@ -885,8 +1001,12 @@ bool CTraderSpi::IsMyOrder(CThostFtdcOrderField *pOrder)
 	//		(pOrder->SessionID == SESSION_ID) &&
 	//		(strcmp(pOrder->OrderRef, ORDER_REF) == 0));
 
-	return ((pOrder->FrontID == FRONT_ID) &&
-		(pOrder->SessionID == SESSION_ID));
+	cout << "Ordrer Front:" << pOrder->FrontID << "Local Front:" << FRONT_ID << endl;
+	cout << "Ordrer SessionID:" << pOrder->SessionID << "Local SessionID:" << SESSION_ID << endl;
+
+	return ((pOrder->FrontID == FRONT_ID) && (pOrder->SessionID == SESSION_ID));
+
+	//return true;
 }
 
 bool CTraderSpi::IsMyExecOrder(CThostFtdcExecOrderField *pExecOrder)

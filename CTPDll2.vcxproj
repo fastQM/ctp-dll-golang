@@ -167,6 +167,7 @@
     <ClInclude Include="ThostTraderApi\ThostFtdcTraderApi.h" />
     <ClInclude Include="ThostTraderApi\ThostFtdcUserApiDataType.h" />
     <ClInclude Include="ThostTraderApi\ThostFtdcUserApiStruct.h" />
+    <ClInclude Include="TraderSpi.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CTPDll2.cpp" />
@@ -183,8 +184,8 @@
     <ClCompile Include="TraderSpi.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="ThostTraderApi\thostmduserapi.lib" />
-    <Library Include="ThostTraderApi\thosttraderapi.lib" />
+    <Library Include="ThostTraderApi\thostmduserapi_se.lib" />
+    <Library Include="ThostTraderApi\thosttraderapi_se.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
