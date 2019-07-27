@@ -8,17 +8,27 @@ DO ***NOT*** allow parallel tradings in a single session, but trading from diffe
 Demo:
 
 dll = &CTPDll{
+
     // make sure all dlls are in the same directory
+    
     Dll: syscall.NewLazyDLL("CTPDll2.dll"),
+    
 }
 
 var config = map[string]interface{}{
+
 	"marketaddr": "tcp://180.168.212.228:41213",
+	
 	"tradeaddr":  "tcp://180.168.212.228:41205",
+	
 	"broker":     "****",
+	
 	"appid":      "*********",
+	
 	"authencode": "*********",
+	
 	"instruments": []map[string]interface{}{
+	
 		{"name": "rb1910"}, // 螺纹钢
 		{"name": "RM809"},  // 菜粨
 		{"name": "AP901"}, // 苹果
@@ -43,30 +53,45 @@ var config = map[string]interface{}{
 
 
 if configS, err = json.Marshal(config); err != nil {
+
     return err
+    
 }
 
 if !dll.SetConfig(string(configS)) {
+
     return errors.New("Fail to config CTP")
+    
 }
 
 go func() {
+
     Logger.Infof("Start the prices monitor...")
+    
     dll.InitMarket()
+    
 }()
 
 go func() {
+
     Logger.Infof("Start trading thread...")
+    
     dll.InitTrade()
+    
 }()
 
 dll.GetInstrumentInfo(instrument)
+
 dll.GetPositionInfo(instrument)
+
 dll.GetDepth(instrument)
 
 result = dll.MarketOpenPosition(instrument, int(Amount), int(Price), 1, isMarket)
+
 result = dll.MarketOpenPosition(instrument, int(Amount), int(Price), 0, isMarket)
+
 result = dll.MarketClosePosition(instrument, int(Amount), int(Price), 0, isMarket, isToday)
+
 result = dll.MarketClosePosition(instrument, int(Amount), int(Price), 1, isMarket, isToday)
 
 dll.CloseMarket()
