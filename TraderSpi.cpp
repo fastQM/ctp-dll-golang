@@ -896,9 +896,9 @@ void CTraderSpi::OnRtnOrder(CThostFtdcOrderField *pOrder)
 				}
 			}
 			else if (pOrder->TimeCondition == THOST_FTDC_TC_IOC) {	// 市价单需要全部成交
+				gTradeInfo->setOrderSysID(pOrder->OrderSysID);
 				if (pOrder->OrderStatus == THOST_FTDC_OST_AllTraded) {
 					gTradeInfo->setStatus(StatusAllTraded);
-					gTradeInfo->setOrderSysID(pOrder->OrderSysID);
 				}
 			}
 		}
