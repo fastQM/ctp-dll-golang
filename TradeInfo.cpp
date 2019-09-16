@@ -347,6 +347,11 @@ void CTradeInfo::updateTradeInfo(double price, int amount) {
 	mTradedIndex++;
 }
 
+void CTradeInfo::clearTradeInfo() {
+	mTradedIndex = 0;
+	memset(mTraded, 0, sizeof(TradedInfo)*MAX_SIZE);
+}
+
 void CTradeInfo::updateQueueInfo(int status, char *ExchangeID, char *OrderSysID) {
 	int length = 0;
 	mTradeResult = status;

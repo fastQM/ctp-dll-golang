@@ -67,6 +67,7 @@ class CTradeInfo{
 		// 获取交易结果，不支持多线程
 		void updateTradeResult(int status, CThostFtdcTradeField *info, char *errorMsg);
 		void updateTradeInfo(double price, int amount);
+		void clearTradeInfo();
 		void updateQueueInfo(int status, char *ExchangeID, char *OrderSysID);
 		int getTradeResult(char *result);
 

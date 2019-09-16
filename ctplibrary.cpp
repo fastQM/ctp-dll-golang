@@ -337,12 +337,14 @@ int MarketOpenPosition(char *instrumentID, int volume, int limitPrice, int isBuy
 			marketFlag = true;
 		}
 
+		gTradeInfo->clearTradeInfo();
+
 		pTraderSpi->ReqMarketOpenInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag);
 		int status = gTradeInfo->getStatus();
 		while (status == StatusProcess||status==StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 100) {
+			if (counter < 300) {
 				counter++;
 			}
 			else {
@@ -366,7 +368,7 @@ int CancelOrder(char *instrumentID, char *exchangeID, char *orderSysID, char *re
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 100) {
+			if (counter < 300) {
 				counter++;
 			}
 			else {
@@ -399,12 +401,15 @@ int MarketClosePosition(char *instrumentID, int volume, int limitPrice, int isBu
 		if (isToday > 0) {
 			todayFlag = true;
 		}
+
+		gTradeInfo->clearTradeInfo();
+
 		pTraderSpi->ReqMarketCloseInsert(instrumentID, volume, limitPrice, buyFlag, marketFlag, todayFlag);
 		int status = gTradeInfo->getStatus();
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 100) {
+			if (counter < 300) {
 				counter++;
 			}
 			else {
@@ -428,12 +433,14 @@ int MarketStopPrice(char *instrumentID, int volume, int isBuy, double stopPrice,
 		if (isBuy > 0) {
 			buyFlag = true;
 		}
+		gTradeInfo->clearTradeInfo();
+
 		pTraderSpi->ReqMarketStopPriceInsert(instrumentID, volume, buyFlag, stopPrice, limitPrice);
 		int status = gTradeInfo->getStatus();
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 100) {
+			if (counter < 300) {
 				counter++;
 			}
 			else {
