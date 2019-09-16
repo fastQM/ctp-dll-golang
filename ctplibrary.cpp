@@ -342,7 +342,7 @@ int MarketOpenPosition(char *instrumentID, int volume, int limitPrice, int isBuy
 		while (status == StatusProcess||status==StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 50) {
+			if (counter < 100) {
 				counter++;
 			}
 			else {
@@ -404,7 +404,7 @@ int MarketClosePosition(char *instrumentID, int volume, int limitPrice, int isBu
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 50) {
+			if (counter < 100) {
 				counter++;
 			}
 			else {
@@ -433,7 +433,7 @@ int MarketStopPrice(char *instrumentID, int volume, int isBuy, double stopPrice,
 		while (status == StatusProcess || status == StatusAllTraded) {
 			status = gTradeInfo->getStatus();
 			Sleep(100);
-			if (counter < 50) {
+			if (counter < 100) {
 				counter++;
 			}
 			else {
